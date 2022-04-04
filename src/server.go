@@ -28,27 +28,21 @@ func ListFiles() string {
 }
 
 func main() {
-	//net.Listen opens the server in the assigned port
 	listener, err := net.Listen("tcp", ":8080")
 	if err != nil {
 		log.Fatal(err)
 	}
-	//listener will close at the end
 	defer listener.Close()
 
-	//accepts connection with the client
-	c, err := listener.Accept()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("client connected: %v\n", listener.Addr())
-
 	for {
-		//creates a reader for the client
-		reader := bufio.NewReader(c)
-		//reads the message
 
-		clientText, err := reader.ReadString('\n')
+		c, err := listener.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("client connected: %v\n", listener.Addr())
+
+		clientText, err := bufio.NewReader(c).ReadString('\n')
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -59,40 +53,48 @@ func main() {
 			fmt.Printf("The server has closed\n")
 			os.Exit(0)
 		} else if strings.TrimSpace(string(clientText)) == "1" {
-			list := ListFiles()
-			c.Write([]byte(list + "-------------------\t"))
+			go Op1(c)
 		} else {
-
-			fmt.Printf("The client has asked to download a file\n")
-			file, err := reader.ReadString('\n')
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			direccion := "./data/" + file
-			fmt.Printf("File: %v", direccion)
-			input, err := ioutil.ReadFile(strings.TrimSpace(direccion))
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			res := bytes.Split(input, []byte("\n"))
-			fmt.Printf("tamanio %v\n", len(res))
-			c.Write([]byte(strconv.Itoa(len(res)) + "\n"))
-			//fmt.Printf("%v\n", res)
-			var partialFile []byte
-			for i := 0; i < len(res); i++ {
-				partialFile = append(res[i], byte('\n'))
-				fmt.Printf("VALOR PARCIAL#%v %v\n\n", i+1, partialFile)
-				c.Write(append(partialFile))
-				time.Sleep(2 * time.Second)
-				validacion, err := reader.ReadString('\n')
-				if err != nil {
-					log.Fatal(err)
-				}
-				fmt.Printf("validacionm%v\n\n", validacion)
-
-			}
+			go Op2(c)
 		}
+	}
+}
+
+func Op1(c net.Conn) {
+	list := ListFiles()
+	c.Write([]byte(list + "-------------------\t"))
+}
+
+func Op2(c net.Conn) {
+
+	fmt.Printf("The client has asked to download a file\n")
+	file, err := bufio.NewReader(c).ReadString('\n')
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	direccion := "./data/" + file
+	fmt.Printf("File: %v", direccion)
+	input, err := ioutil.ReadFile(strings.TrimSpace(direccion))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	res := bytes.Split(input, []byte("\n"))
+	fmt.Printf("tamanio %v\n", len(res))
+	c.Write([]byte(strconv.Itoa(len(res)) + "\n"))
+	//fmt.Printf("%v\n", res)
+	var partialFile []byte
+	for i := 0; i < len(res); i++ {
+		partialFile = append(res[i], byte('\n'))
+		fmt.Printf("VALOR PARCIAL#%v %v\n\n", i+1, partialFile)
+		c.Write(append(partialFile))
+		time.Sleep(2 * time.Second)
+		validacion, err := bufio.NewReader(c).ReadString('\n')
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("validacionm%v\n\n", validacion)
+
 	}
 }
