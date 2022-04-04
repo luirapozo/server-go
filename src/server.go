@@ -2,12 +2,15 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 )
 
 func ListFiles() string {
@@ -72,11 +75,24 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			c.Write(input)
 
+			res := bytes.Split(input, []byte("\n"))
+			fmt.Printf("tamanio %v\n", len(res))
+			c.Write([]byte(strconv.Itoa(len(res)) + "\n"))
+			//fmt.Printf("%v\n", res)
+			var partialFile []byte
+			for i := 0; i < len(res); i++ {
+				partialFile = append(res[i], byte('\n'))
+				fmt.Printf("VALOR PARCIAL#%v %v\n\n", i+1, partialFile)
+				c.Write(append(partialFile))
+				time.Sleep(2 * time.Second)
+				validacion, err := reader.ReadString('\n')
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Printf("validacionm%v\n\n", validacion)
+
+			}
 		}
-
-		//sends message to the clients
-		c.Write([]byte("Server has recieved the message\n"))
 	}
 }

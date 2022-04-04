@@ -7,7 +7,9 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -52,15 +54,28 @@ func main() {
 			}
 			c.Write([]byte(file + "\n"))
 
-			serverFile, err := bufio.NewReader(c).ReadBytes(' ')
+			size, err := bufio.NewReader(c).ReadString('\n')
 			if err != nil {
-				fmt.Printf("Error aqui\n")
+				log.Fatal(err)
+			}
+			intSize, err := strconv.Atoi(strings.TrimSpace(size))
+			if err != nil {
 				log.Fatal(err)
 			}
 
-			err = ioutil.WriteFile(strings.TrimSpace(file), serverFile, 0644)
+			var completeFile []byte
+			for i := 0; i < intSize; i++ {
+				serverFile, err := bufio.NewReader(c).ReadBytes('\n')
+				if err != nil {
+					log.Fatal(err)
+				}
+				c.Write([]byte("Recibido\n"))
+				fmt.Printf("slice %v: %v\n\n", i+1, serverFile)
+				completeFile = append(completeFile, serverFile...)
+				time.Sleep(1 * time.Second)
+			}
+			err = ioutil.WriteFile(strings.TrimSpace(file), completeFile, 0644)
 			if err != nil {
-				fmt.Printf("Error aqua\n")
 				log.Fatal(err)
 			}
 
